@@ -89,7 +89,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 				closestDist = dist;
 			}
 		}
-		predicted[closestIndex].id = o.id;
+		o.id = predicted[closestIndex].id;
 	}
 }
 
