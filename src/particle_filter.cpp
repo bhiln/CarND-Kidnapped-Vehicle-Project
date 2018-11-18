@@ -82,16 +82,22 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	normal_distribution<double> dist_theta(0, std_theta);
 
 	for (auto &p : particles){
-		p.x = p.x + (velocity/yaw_rate) * (sin(p.theta + (yaw_rate * delta_t)) - sin(p.theta));
-		p.y = p.y + (velocity/yaw_rate) * (cos(p.theta) - cos(p.theta + (yaw_rate * delta_t)));
-		p.theta = p.theta + (yaw_rate * delta_t);
+
+		// calculate new state
+		if (fabs(yaw_rate) < 0.00001) {  
+			p.x += velocity * delta_t * cos(p.theta);
+			p.y += velocity * delta_t * sin(p.theta);
+		} 
+		else {
+			p.x = p.x + (velocity/yaw_rate) * (sin(p.theta + (yaw_rate * delta_t)) - sin(p.theta));
+			p.y = p.y + (velocity/yaw_rate) * (cos(p.theta) - cos(p.theta + (yaw_rate * delta_t)));
+			p.theta = p.theta + (yaw_rate * delta_t);
+		}
 
 		p.x += dist_x(gen);
 		p.y += dist_y(gen);
 		p.theta += dist_theta(gen);	 
 	}
-
-	// cout << particles[0].x << "," << particles[0].y << "," << particles[0].theta << std::endl;
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
