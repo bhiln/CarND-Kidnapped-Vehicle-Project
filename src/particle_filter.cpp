@@ -126,6 +126,51 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   and the following is a good resource for the actual equation to implement (look at equation 
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
+
+	for (auto &p : particles){
+		vector<LandmarkObs> predicted;
+		for (auto &l : map_landmarks.landmark_list){
+			if (dist(p.x, p.y, l.x_f, l.y_f) <= sensor_range){
+				LandmarkObs tempLandmark;
+				tempLandmark.id = l.id_i;
+				tempLandmark.x = l.x_f;
+				tempLandmark.y = l.y_f;
+				predicted.push_back(tempLandmark);
+			}
+		}
+		
+		vector<LandmarkObs> obs_trans;
+		for (auto &o : observations){
+			LandmarkObs tempTrans;
+			tempTrans.id = o.id;
+			tempTrans.x = p.x + (cos(p.theta) * o.x) - (sin(p.theta) * o.y);
+			tempTrans.y = p.y + (sin(p.theta) * o.x) + (cos(p.theta) * o.y);
+			obs_trans.push_back(tempTrans);
+		}
+		
+		dataAssociation(predicted, obs_trans);
+
+		p.weight = 1.0;
+		for (auto &ot : obs_trans){
+			for (auto &pred : predicted){
+				if (pred.id == ot.id){
+					double sig_x = std_landmark[0];
+					double sig_y = std_landmark[1];
+					
+					// calculate normalization term
+					double gauss_norm = (1/(2 * M_PI * sig_x * sig_y));
+
+					// calculate exponent
+					double exponent = (pow((ot.x - pred.x),2)/(2 * pow(sig_x,2))) + (pow((ot.y - pred.y),2)/(2 * pow(sig_y,2)));
+
+					// calculate weight using normalization terms and exponent
+					double obs_weight = gauss_norm * exp(-exponent);
+
+					p.weight *= obs_weight;
+				}
+			}
+		}
+	}
 }
 
 void ParticleFilter::resample() {
