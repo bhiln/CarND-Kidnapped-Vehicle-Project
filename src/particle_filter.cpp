@@ -107,16 +107,17 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	//   implement this method and use it as a helper during the updateWeights phase.
 
 	for (auto &o : observations){
-		size_t closestIndex = 0;
+		int closestID = -1;
 		double closestDist = std::numeric_limits<double>::max();
-		for (size_t i = 0; i < predicted.size(); ++i){
-			double distance = dist(o.x, o.y, predicted[i].x, predicted[i].y);
+
+		for (auto &p : predicted){
+			double distance = dist(o.x, o.y, p.x, p.y);
 			if (distance < closestDist){
-				closestIndex = i;
+				closestID = p.id;
 				closestDist = distance;
 			}
 		}
-		o.id = predicted[closestIndex].id;
+		o.id = closestID;
 	}
 }
 
@@ -132,10 +133,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   and the following is a good resource for the actual equation to implement (look at equation 
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
+	weights.clear();
 
 	for (auto &p : particles){
 		vector<LandmarkObs> predicted;
-		for (auto &l : map_landmarks.landmark_list){
+		for (const auto &l : map_landmarks.landmark_list){
 			if (dist(p.x, p.y, l.x_f, l.y_f) <= sensor_range){
 				LandmarkObs tempLandmark;
 				tempLandmark.id = l.id_i;
@@ -146,7 +148,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		}
 		
 		vector<LandmarkObs> obs_trans;
-		for (auto &o : observations){
+		for (const auto &o : observations){
 			LandmarkObs tempTrans;
 			tempTrans.id = o.id;
 			tempTrans.x = p.x + (cos(p.theta) * o.x) - (sin(p.theta) * o.y);
@@ -157,8 +159,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		dataAssociation(predicted, obs_trans);
 
 		p.weight = 1.0;
-		for (auto &ot : obs_trans){
-			for (auto &pred : predicted){
+		for (const auto &ot : obs_trans){
+			for (const auto &pred : predicted){
 				if (pred.id == ot.id){
 					double sig_x = std_landmark[0];
 					double sig_y = std_landmark[1];
@@ -176,6 +178,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 				}
 			}
 		}
+		weights.push_back(p.weight);
 	}
 }
 
