@@ -186,7 +186,35 @@ void ParticleFilter::resample() {
 	// TODO: Resample particles with replacement with probability proportional to their weight. 
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
+	vector<Particle> resampled;
+	
+	// This line creates a uniform distribution for index
+	default_random_engine gen;
+	uniform_int_distribution<int> dist_index(0, num_particles-1);
+	int index = dist_index(gen);
+	double beta = 0;
 
+	double max_weight = 0;
+	for (const auto &w : weights){
+		if (w > max_weight){
+			max_weight = w;
+		}
+	}
+	// auto max_weight = max_element(std::begin(weights), std::end(weights));
+	uniform_real_distribution<double> dist_beta(0.0, 2.0*max_weight);
+	for (size_t i = 0; i < num_particles; ++i){
+		beta += dist_beta(gen);
+		while (weights[index] < beta){
+			beta -= weights[index];
+			index++;
+			if (index >= num_particles){
+				index -= num_particles;
+			}
+		}
+		resampled.push_back(particles[index]);
+	}
+
+	particles = resampled;
 }
 
 Particle ParticleFilter::SetAssociations(Particle& particle, const std::vector<int>& associations, 
